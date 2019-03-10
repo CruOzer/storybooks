@@ -3,7 +3,7 @@
     <form action="/stories" method="POST" class="col s12">
         <div class="row">
             <div class="input-field">
-                <input type="text" name="title">
+                <input type="text" name="title" required>
                 <label for="title">Title</label>
             </div>
         </div>
@@ -31,7 +31,7 @@
         <div class="row">
             <div class="input-field">
                 <h3>Tell us your story</h3>
-                <textarea name="body"></textarea>                
+                <textarea name="body" required></textarea>                
             </div>
         </div>
         <input type="submit" value="Save" class="btn">

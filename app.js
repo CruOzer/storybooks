@@ -8,9 +8,20 @@ const mongoose = require('mongoose');
 const passport = require('passport');
 const cookieParser = require('cookie-parser');
 const bodyParser = require('body-parser');
+const methodOverride = require('method-override');
 
-// Passport config
-require('./config/passport')(passport);
+
+// Handelbars Helper
+const {
+    truncate,
+    stripTags,
+    formatDate,
+    select
+} = require('./helpers/hbs');
+
+// Load models
+require('./models/User');
+require('./models/Story');
 
 // Load Routes
 const auth = require('./routes/auth');
@@ -32,8 +43,18 @@ mongoose.connect(process.env.MONGO_URI, {
         console.log('MongoDB connection failure: ' + err);
     });
 
+
+// Passport config
+require('./config/passport')(passport);
+
 // Handlebars Middleware
 app.engine('handlebars', exphbs({
+    helpers: {
+        truncate: truncate,
+        stripTags: stripTags,
+        formatDate: formatDate,
+        select: select
+    },
     defaultLayout: 'main'
 }));
 app.set('view engine', 'handlebars');
@@ -61,6 +82,10 @@ app.use(bodyParser.urlencoded({
 // parse application/json
 app.use(bodyParser.json());
 
+// Method-Override Middleware
+// override with the X-HTTP-Method-Override header in the request
+//app.use(methodOverride('X-HTTP-Method-Override'));
+app.use(methodOverride('_method'));
 
 // Global variables
 app.use(function (req, res, next) {
