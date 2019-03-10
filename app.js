@@ -7,6 +7,7 @@ const session = require('express-session');
 const mongoose = require('mongoose');
 const passport = require('passport');
 const cookieParser = require('cookie-parser');
+const bodyParser = require('body-parser');
 
 // Passport config
 require('./config/passport')(passport);
@@ -14,6 +15,7 @@ require('./config/passport')(passport);
 // Load Routes
 const auth = require('./routes/auth');
 const index = require('./routes/index');
+const stories = require('./routes/stories');
 
 const app = express();
 
@@ -21,8 +23,7 @@ const app = express();
 mongoose.Promise = global.Promise;
 // Connect to mongoose
 mongoose.connect(process.env.MONGO_URI, {
-        // useNewUrlParser: true        
-        useMongoClient: true
+        useNewUrlParser: true
     })
     .then(() => {
         console.log('MongoDB connected...');
@@ -51,6 +52,15 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 
+// Body Parser Middleware
+// parse application/x-www-form-urlencoded
+app.use(bodyParser.urlencoded({
+    extended: false
+}));
+
+// parse application/json
+app.use(bodyParser.json());
+
 
 // Global variables
 app.use(function (req, res, next) {
@@ -58,10 +68,13 @@ app.use(function (req, res, next) {
     next();
 });
 
+// Set static folder
+app.use(express.static(path.join(__dirname, 'public')));
 
 // Use Routes
 app.use('/', index);
 app.use('/auth', auth);
+app.use('/stories', stories);
 
 const port = process.env.PORT || 5000;
 
