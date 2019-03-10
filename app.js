@@ -1,16 +1,23 @@
+const dotenv = require('dotenv');
+dotenv.config();
 const express = require('express');
 const path = require('path');
 const mongoose = require('mongoose');
+const passport = require('passport');
 
+
+// Passport config
+require('./config/passport')(passport);
+
+// Load Routes
+const auth = require('./routes/auth');
 
 const app = express();
 
-// DB Config
-const db = require('./config/database');
 // Map global promise - get rid of warning
 mongoose.Promise = global.Promise;
 // Connect to mongoose
-mongoose.connect(db.mongoURI, {
+mongoose.connect(process.env.MONGO_URI, {
         // useNewUrlParser: true        
         useMongoClient: true
     })
@@ -25,6 +32,8 @@ app.get('/', (req, res) => {
     res.send('It works');
 })
 
+// Use Routes
+app.use('/auth', auth);
 
 const port = process.env.PORT || 5000;
 
