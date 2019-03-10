@@ -14,7 +14,9 @@ const {
 router.get('/', (req, res) => {
     Story.find({
         status: 'public'
-    }).populate('user').then(stories => {
+    }).populate('user').sort({
+        date: 'desc'
+    }).then(stories => {
         res.render('stories/index', {
             stories: stories
         });
@@ -34,9 +36,13 @@ router.get('/edit/:id', ensureAuthenticated, (req, res) => {
         _id: req.params.id,
         user: req.user.id
     }).populate('user').then(story => {
-        res.render('stories/edit', {
-            story: story
-        });
+        if (story) {
+            res.render('stories/edit', {
+                story: story
+            });
+        } else {
+            res.redirect('/stories');
+        }
     }).catch(err => console.log(err));
 });
 
@@ -44,15 +50,43 @@ router.get('/edit/:id', ensureAuthenticated, (req, res) => {
 router.get('/show/:id', (req, res) => {
     Story.findOne({
         _id: req.params.id
-    }).populate('user').then(story => {
-        res.render('stories/show', {
-            story: story
-        });
+    }).populate('user').populate('comments.commentUser').then(story => {
+        if (story.status == 'public' || (req.user && req.user.id === story.user.id)) {
+            res.render('stories/show', {
+                story: story
+            });
+        } else {
+            res.redirect('/stories');
+        }
     }).catch(err => console.log(err));
 });
 
+// List stories from a user
+router.get('/user/:userId', (req, res) => {
+    Story.find({
+        user: req.params.userId,
+        status: 'public'
+    }).populate('user').then(stories => {
+        res.render('stories/index', {
+            stories: stories
+        })
+    }).catch(err => console.log(err))
+});
+
+// Logged in users story
+router.get('/my', ensureAuthenticated, (req, res) => {
+    Story.find({
+        user: req.user.id,
+    }).populate('user').then(stories => {
+        res.render('stories/index', {
+            stories: stories
+        })
+    }).catch(err => console.log(err))
+});
+
+
 // Add story
-router.post('/', (req, res) => {
+router.post('/', ensureAuthenticated, (req, res) => {
     const newStory = {
         title: req.body.title,
         body: req.body.body,
@@ -71,7 +105,7 @@ router.post('/', (req, res) => {
 });
 
 // Edit story
-router.put('/:id', (req, res) => {
+router.put('/:id', ensureAuthenticated, (req, res) => {
     Story.findOne({
         _id: req.params.id,
         user: req.user.id
@@ -85,7 +119,7 @@ router.put('/:id', (req, res) => {
 });
 
 // Delete story
-router.delete('/:id', (req, res) => {
+router.delete('/:id', ensureAuthenticated, (req, res) => {
     Story.deleteOne({
         _id: req.params.id,
         user: req.user.id
@@ -93,5 +127,20 @@ router.delete('/:id', (req, res) => {
         res.redirect('/dashboard');
     }).catch(err => console.log(err));
 })
+
+// Add Comment
+router.post('/comment/:id', ensureAuthenticated, (req, res) => {
+    Story.findOne({
+        _id: req.params.id
+    }).then(story => {
+        const newComment = {
+            commentBody: req.body.commentBody,
+            commentUser: req.user.id
+        }
+        // Add to comments array
+        story.comments.unshift(newComment);
+        story.save().then(story => res.redirect(`/stories/show/${story.id}`)).catch(err => console.log(err));
+    }).catch(err => console.log(err));
+});
 
 module.exports = router;
